@@ -14,7 +14,9 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ddivyadharshini28/acadamic-deadline-project-app:v1.1
+          image: __IMAGE__
+
+
           ports:
             - containerPort: 80
 ---

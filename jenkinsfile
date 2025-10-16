@@ -1,0 +1,96 @@
+pipeline {
+  agent any
+  triggers{
+    githubPush()
+  }
+
+  parameters {
+    string(name: 'IMAGE_TAG', defaultValue: 'v1.1', description: 'Docker image tag')
+    string(name: 'BACKEND_IMAGE', defaultValue: 'acadamic-deadline-project-backend', description: 'Backend image name')
+    string(name: 'FRONTEND_IMAGE', defaultValue: 'acadamic-deadline-project-frontend', description: 'Frontend image name')
+    string(name: 'PORT', defaultValue: '3000', description: 'Backend container port')
+  }
+
+  environment {
+    DOCKERHUB_CRED = credentials('dockerhub')
+    AWS_CRED = credentials('aws_cred')
+    SONAR_TOKEN = credentials('sonarqube-token')
+    SONAR_HOST_URL = 'http://<your-sonarqube-ip>:9001'
+    ECR_URL = "636768524979.dkr.ecr.ap-northeast-1.amazonaws.com"
+  }
+
+  stages {
+    stage('Clone Repo') {
+      steps {
+        git 'https://github.com/Divyadharshini-Kannan/Acadamic-Deadline-Project.git'
+      }
+    }
+
+    stage('Build Images with Docker Compose') {
+      steps {
+        sh 'docker compose build'
+      }
+    }
+
+    stage('Push Images to Docker Hub') {
+      steps {
+        sh '''
+          echo $DOCKERHUB_CRED_PSW | docker login -u $DOCKERHUB_CRED_USR --password-stdin
+          docker compose push
+        '''
+      }
+    }
+
+    stage('Push Backend Image to AWS ECR') {
+      steps {
+        withCredentials([[
+          $class: 'AmazonWebServicesCredentialsBinding',
+          credentialsId: 'aws_cred'
+        ]]) {
+          sh '''
+            aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_URL
+            docker tag ${BACKEND_IMAGE}:${IMAGE_TAG} $ECR_URL/${BACKEND_IMAGE}:${IMAGE_TAG}
+            docker push $ECR_URL/${BACKEND_IMAGE}:${IMAGE_TAG}
+          '''
+        }
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh '''
+            sonar-scanner \
+              -Dsonar.projectKey=acadamic-deadline-project \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.login=$SONAR_TOKEN
+          '''
+        }
+      }
+    }
+
+    stage('Kubernetes Deployment') {
+      steps {
+        sh '''
+          kubectl apply -f backend-deployment.yaml
+          kubectl apply -f frontend-deployment.yaml
+          kubectl apply -f ingress.yaml
+        '''
+      }
+    }
+
+    stage('Expose Ingress & LoadBalancer') {
+      steps {
+        sh '''
+          echo "Ingress Address:"
+          kubectl get ingress project-ingress -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"
+          echo ""
+          echo "Frontend LoadBalancer Address:"
+          kubectl get svc frontend-service -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"
+          echo ""
+        '''
+      }
+    }
+  }
+}

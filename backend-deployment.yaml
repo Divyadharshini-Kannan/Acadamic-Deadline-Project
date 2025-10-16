@@ -14,7 +14,9 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ddivyadharshini28/acadamic-deadline-project-backend:v1.1
+          image: __IMAGE__
+
+
           ports:
             - containerPort: 3000
           env:
