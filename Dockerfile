@@ -11,7 +11,7 @@ RUN npm install
 # Copy the rest of the app
 COPY . .
 
-# Expose the port
+# Expose backend port
 EXPOSE 3000
 
 # Start the server

@@ -1,19 +1,13 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
+  backend:
+    build:
+      context: .
     ports:
       - "3000:3000"
     environment:
-      - PORT=3000
-      - NODE_ENV=production
       - MONGO_URI=mongodb://mongodb:27017/test
-      - SESSION_SECRET=a3b2f8d23c84c5eaf8dca92b21a1c9d739e24c88b9db19e88b0d4f5e7e1c6f9d
-      - EMAIL_USER=2002ak2002@gmail.com
-      - EMAIL_PASS=prgi uvhi dpri wlaz
-      - EMAIL_HOST=smtp.gmail.com
-      - EMAIL_PORT=587
     depends_on:
       - mongodb
 
