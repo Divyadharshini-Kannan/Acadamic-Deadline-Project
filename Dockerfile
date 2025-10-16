@@ -1,14 +1,18 @@
-FROM node:20-alpine AS builder
+# Use official Node.js image
+FROM node:18
+
+# Set working directory
 WORKDIR /app
+
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
-COPY . .
-RUN npm run build
 
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY package*.json ./
-RUN npm install --production
+# Copy the rest of the app
+COPY . .
+
+# Expose the port
 EXPOSE 3000
-CMD ["node", "dist/server.js"]
+
+# Start the server
+CMD ["node", "server.js"]
