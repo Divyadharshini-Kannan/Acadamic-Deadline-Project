@@ -53,7 +53,7 @@ spec:
         - name: backend
           image: __IMAGE__
           ports:
-            - containerPort: 3000
+            - containerPort: 27017
           env:
             - name: MONGO_URI
               value: mongodb://mongodb-service:27017/test
@@ -66,6 +66,6 @@ spec:
   selector:
     app: backend
   ports:
-    - port: 3000
-      targetPort: 3000
+    - port: 27017
+      targetPort: 27017
   type: ClusterIP
